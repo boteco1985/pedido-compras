@@ -1050,15 +1050,16 @@ function pcRender() {
   cards.innerHTML = f.map(p => {
     const imgUrl = p.img && p.img.includes("drive.google.com") ? pcDriveThumb(p.img) : "";
     const temPromo = p.promo && p.promo.trim() !== "";
-    return "<div class='pc-card' onclick="pcDetalhe('" + p.cod + "')">"
-      + (imgUrl ? "<img class='pc-card-img' src='" + imgUrl + "' onerror="this.style.display='none'" alt=''>" : "")
-      + "<div class='pc-card-info'>"
-      + "<div class='pc-card-nome'>" + p.nome + "</div>"
-      + "<div class='pc-card-cat'>" + p.cat + "</div>"
-      + (temPromo ? "<div class='pc-card-promo'>&#127881; Promocao disponivel</div>" : "")
-      + "</div>"
-      + "<div><div class='pc-card-preco'>R$ " + pcFmt(p.vista) + "</div></div>"
-      + "</div>";
+    let h = "<div class='pc-card' onclick='pcDetalhe(this)' data-cod='" + p.cod + "'>";
+    if (imgUrl) h += "<img class='pc-card-img' src='" + imgUrl + "' onerror='this.style.display="none"' alt=''>";
+    h += "<div class='pc-card-info'>";
+    h += "<div class='pc-card-nome'>" + p.nome + "</div>";
+    h += "<div class='pc-card-cat'>" + p.cat + "</div>";
+    if (temPromo) h += "<div class='pc-card-promo'>&#127881; Promocao disponivel</div>";
+    h += "</div>";
+    h += "<div><div class='pc-card-preco'>R$ " + pcFmt(p.vista) + "</div></div>";
+    h += "</div>";
+    return h;
   }).join("");
 }
 
@@ -1072,7 +1073,8 @@ function pcFmt(v) {
   return isNaN(n) ? v : n.toLocaleString("pt-BR", {minimumFractionDigits: 2});
 }
 
-function pcDetalhe(cod) {
+function pcDetalhe(el) {
+  const cod = el.getAttribute('data-cod');
   const p = dadosPrecos.find(x => x.cod === cod);
   if (!p) return;
   document.getElementById("pc-lista-view").style.display = "none";
