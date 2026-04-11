@@ -462,20 +462,11 @@ function entrarNoApp() {
 function mostrarMod(mod) {
   ["pedidos","pix","estoque","precos"].forEach(m=>{
     const el = document.getElementById("mod-"+m);
-    if (el) el.style.display=m===mod?"block":"none";
+    if (el) el.style.display = m===mod ? "block" : "none";
     const nb = document.getElementById("nav-"+m);
-    if (nb) nb.classList.toggle("active",m===mod);
+    if (nb) nb.classList.toggle("active", m===mod);
   });
-  // pedidos nao usa mod- mas step-
-  if (mod==="pedidos") {
-    document.getElementById("step-filtros").style.display="block";
-  } else {
-    document.getElementById("step-filtros").style.display="none";
-    document.getElementById("step-envio").style.display="none";
-    document.getElementById("step-sucesso").style.display="none";
-    document.getElementById("step-senha").style.display="none";
-  }
-  if (mod==="pix"&&dadosPixFiltrados.length>0) renderPix();
+  if (mod==="pix" && dadosPixFiltrados.length>0) renderDashboardPix();
   if (mod==="estoque") popularEstoqueForns();
   if (mod==="precos") pcInit();
 }
@@ -496,6 +487,7 @@ async function carregarProdutos() {
       codigo:lp(r[0]), produto:lp(r[1]), categoria:lp(r[2]), fornecedor:lp(r[3])
     })).filter(p=>p.produto);
     popularPedidoForns();
+    popularEstoqueForns();
     document.getElementById("ped-loading").style.display="none";
     document.getElementById("ped-empty").style.display="block";
   } catch(e) {
