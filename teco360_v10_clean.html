@@ -1047,20 +1047,46 @@ function pcRender() {
   const empty = document.getElementById("pc-empty");
   if (!f.length) { cards.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
-  cards.innerHTML = f.map(p => {
-    const imgUrl = p.img && p.img.includes("drive.google.com") ? pcDriveThumb(p.img) : "";
-    const temPromo = p.promo && p.promo.trim() !== "";
-    let h = "<div class='pc-card' onclick='pcDetalhe(this)' data-cod='" + p.cod + "'>";
-    if (imgUrl) h += "<img class='pc-card-img' src='" + imgUrl + "' onerror='this.style.display="none"' alt=''>";
-    h += "<div class='pc-card-info'>";
-    h += "<div class='pc-card-nome'>" + p.nome + "</div>";
-    h += "<div class='pc-card-cat'>" + p.cat + "</div>";
-    if (temPromo) h += "<div class='pc-card-promo'>&#127881; Promocao disponivel</div>";
-    h += "</div>";
-    h += "<div><div class='pc-card-preco'>R$ " + pcFmt(p.vista) + "</div></div>";
-    h += "</div>";
-    return h;
-  }).join("");
+  const divs = f.map(p => {
+    const div = document.createElement("div");
+    div.className = "pc-card";
+    div.dataset.cod = p.cod;
+    div.addEventListener("click", function(){ pcDetalhe(this); });
+    if (p.img && p.img.includes("drive.google.com")) {
+      const img = document.createElement("img");
+      img.className = "pc-card-img";
+      img.src = pcDriveThumb(p.img);
+      img.onerror = function(){ this.style.display = "none"; };
+      img.alt = "";
+      div.appendChild(img);
+    }
+    const info = document.createElement("div");
+    info.className = "pc-card-info";
+    const nomeDiv = document.createElement("div");
+    nomeDiv.className = "pc-card-nome";
+    nomeDiv.textContent = p.nome;
+    info.appendChild(nomeDiv);
+    const catDiv = document.createElement("div");
+    catDiv.className = "pc-card-cat";
+    catDiv.textContent = p.cat;
+    info.appendChild(catDiv);
+    if (p.promo && p.promo.trim() !== "") {
+      const promoDiv = document.createElement("div");
+      promoDiv.className = "pc-card-promo";
+      promoDiv.textContent = "Promocao disponivel";
+      info.appendChild(promoDiv);
+    }
+    div.appendChild(info);
+    const precoWrap = document.createElement("div");
+    const precoDiv = document.createElement("div");
+    precoDiv.className = "pc-card-preco";
+    precoDiv.textContent = "R$ " + pcFmt(p.vista);
+    precoWrap.appendChild(precoDiv);
+    div.appendChild(precoWrap);
+    return div;
+  });
+  cards.innerHTML = "";
+  divs.forEach(d => cards.appendChild(d));
 }
 
 function pcDriveThumb(url) {
