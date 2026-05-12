@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Diagnóstico Teco360</title>
+<style>
+body{font-family:monospace;background:#0f0f10;color:#f0ede8;padding:20px;max-width:800px;margin:0 auto}
+h2{color:#f0c040}
+.btn{background:#f0c040;color:#000;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold;margin:8px 4px}
+.resultado{background:#1a1a1d;border:1px solid #2e2e34;border-radius:8px;padding:16px;margin:12px 0;white-space:pre-wrap;word-break:break-all;font-size:12px}
+.ok{border-color:#5ee0a0;color:#5ee0a0}
+.erro{border-color:#ff8c66;color:#ff8c66}
+.info{border-color:#5cb8ff;color:#5cb8ff}
+</style>
+</head>
+<body>
+<h2>🔍 Diagnóstico Teco360</h2>
+<p>Clique em cada botão e me mande os resultados.</p>
+
+<h3>Teste 1 — Apps Script direto</h3>
+<button class="btn" onclick="teste1()">Testar lerProdutos</button>
+<div id="r1" class="resultado info">Aguardando...</div>
+
+<h3>Teste 2 — gviz CSV da aba Produtos</h3>
+<button class="btn" onclick="teste2()">Testar CSV</button>
+<div id="r2" class="resultado info">Aguardando...</div>
+
+<h3>Teste 3 — gviz CSV primeiras 5 linhas</h3>
+<button class="btn" onclick="teste3()">Ver primeiras linhas do CSV</button>
+<div id="r3" class="resultado info">Aguardando...</div>
+
+<script>
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyhfgqpILakt5sHKXzxOyD1eOZTFKV6F_zkSq9Mi6Tq-KxGUUqFmr_KcxOmTeh14Fz9/exec";
+const SHEET_ID   = "1s_irNOK4bZF_D0bfNQkiKvPHe5Lcr12etTamxRAi9dw";
+
+async function teste1() {
+  const el = document.getElementById('r1');
+  el.className = 'resultado info';
+  el.textContent = 'Buscando...';
+  try {
+    const resp = await fetch(URL_SCRIPT + "?acao=lerProdutos", {redirect:'follow'});
+    const text = await resp.text();
+    el.textContent = 'Status HTTP: ' + resp.status + '\nURL final: ' + resp.url + '\n\nPrimeiros 500 chars da resposta:\n' + text.slice(0,500);
+    // Tentar parsear
+    try {
+      const data = JSON.parse(text);
+      const forns = [...new Set(data.produtos.map(p=>p.fornecedor))].sort();
+      el.textContent += '\n\n✅ JSON OK! Produtos: ' + data.produtos.length + '\nFornecedores (' + forns.length + '): ' + forns.join(', ');
+      el.className = 'resultado ok';
+    } catch(pe) {
+      el.textContent += '\n\n❌ Nao e JSON valido. Erro: ' + pe.message;
+      el.className = 'resultado erro';
+    }
+  } catch(e) {
+    el.textContent = '❌ ERRO: ' + e.message;
+    el.className = 'resultado erro';
+  }
+}
+
+async function teste2() {
+  const el = document.getElementById('r2');
+  el.className = 'resultado info';
+  el.textContent = 'Buscando...';
+  const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Produtos';
+  try {
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const linhas = text.trim().split('\n');
+    el.textContent = 'Status HTTP: ' + resp.status + '\nTotal linhas: ' + linhas.length + '\n\nLinha 1 (primeiros 200 chars):\n' + linhas[0].slice(0,200) + '\n\nLinha 2:\n' + (linhas[1]||'').slice(0,150) + '\n\nLinha 3:\n' + (linhas[2]||'').slice(0,150);
+    
+    // Contar fornecedores
+    const forns = new Set();
+    linhas.slice(1).forEach(l => {
+      const m = l.match(/"([^"]+)"\s*$/);
+      const f = m ? m[1] : l.split(',').pop().replace(/"/g,'').trim();
+      if (f) forns.add(f);
+    });
+    el.textContent += '\n\nFornecedores detectados: ' + forns.size + '\n' + [...forns].sort().join(', ');
+    el.className = linhas.length > 100 ? 'resultado ok' : 'resultado erro';
+  } catch(e) {
+    el.textContent = '❌ ERRO: ' + e.message;
+    el.className = 'resultado erro';
+  }
+}
+
+async function teste3() {
+  const el = document.getElementById('r3');
+  el.className = 'resultado info';
+  el.textContent = 'Buscando...';
+  const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Produtos';
+  try {
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const linhas = text.trim().split('\n');
+    let saida = 'Total linhas: ' + linhas.length + '\n\n';
+    for (let i=0; i<Math.min(8,linhas.length); i++) {
+      saida += 'Linha ' + (i+1) + ' (' + linhas[i].length + ' chars): ' + linhas[i].slice(0,120) + '\n\n';
+    }
+    el.textContent = saida;
+    el.className = 'resultado info';
+  } catch(e) {
+    el.textContent = '❌ ERRO: ' + e.message;
+    el.className = 'resultado erro';
+  }
+}
+</script>
+</body>
+</html>
