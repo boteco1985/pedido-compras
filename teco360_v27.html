@@ -290,7 +290,9 @@ select:focus,input:focus{border-color:var(--accent)}
     <div id="mod-pix" style="display:none">
       <div class="sec">
         <div class="sec-t">Buscar cliente</div>
-        <input type="text" id="pix-cliente-busca" placeholder="Digite o nome do cliente..." oninput="pixBuscarCliente()">
+        <input type="text" id="pix-cliente-busca" placeholder="Digite o nome do cliente..." 
+          oninput="pixBuscarCliente()" autocomplete="off" list="pix-cliente-lista">
+        <datalist id="pix-cliente-lista"></datalist>
         <div id="pix-cliente-resultado" style="margin-top:10px"></div>
       </div>
       <div class="sec">
@@ -923,7 +925,7 @@ function mostrarMod(mod) {
     const nb = document.getElementById("nav-"+m);
     if (nb) nb.classList.toggle("active", m===mod);
   });
-  if (mod==="pix" && dadosPixFiltrados.length>0) renderDashboardPix();
+  if (mod==="pix" && dadosPixFiltrados.length>0) renderPix();
   if (mod==="estoque") popularEstoqueForns();
   if (mod==="precos") pcInit();
   if (mod==="financeiro") finInit();
@@ -998,7 +1000,7 @@ function onPedFornChange() {
   document.getElementById("ped-nores").style.display="none";
   if (!forn){document.getElementById("ped-empty").style.display="block";return;}
   // Mostrar botão gerenciar disponibilidade só para Gestor
-  if (isGestor()) document.getElementById("ped-gerenciar-btn").style.display="block";
+  if (isGestor) document.getElementById("ped-gerenciar-btn").style.display="block";
   const cats=[...new Set(produtos.filter(p=>p.fornecedor===forn).map(p=>p.categoria))].sort();
   document.getElementById("sel-ped-cat").innerHTML=
     "<option value=''>Todas as categorias</option>"
@@ -1331,7 +1333,7 @@ async function carregarDadosPix() {
       idEmail:lp(r[0]), idTransacao:lp(r[1]),
       data:lp(r[2]), hora:lp(r[3]),
       recebido:lp(r[4]),
-      valor:parseFloat((lp(r[5])||"0").replace(",","."))||0
+      valor:lpn(r[5])
     })).filter(p=>p.idEmail&&p.data);
     filtroRapido(30);
   } catch(e){console.error("Erro Pix:",e);}
@@ -2062,7 +2064,7 @@ async function fiadoInit() {
   if (!dadosJuros.length) await fiadoCarregarJuros();
   if (!dadosFiados.length) await fiadoCarregarFiados();
   // Alertas para Gestor
-  if (isGestor()) fiadoVerificarAlertas();
+  if (isGestor) fiadoVerificarAlertas();
 }
 
 function fiadoTab(tab) {
@@ -3341,8 +3343,11 @@ async function agendaExcluirItem(cod) {
 function pixBuscarCliente() {
   const busca = document.getElementById('pix-cliente-busca').value.toLowerCase().trim();
   const el = document.getElementById('pix-cliente-resultado');
+  // Popular datalist com nomes únicos
+  const nomes = [...new Set(dadosPix.map(p=>p.recebido).filter(Boolean))].sort();
+  const dl = document.getElementById('pix-cliente-lista');
+  if (dl) dl.innerHTML = nomes.map(n=>"<option value='"+n+"'>").join('');
   if (!busca || busca.length < 2) { el.innerHTML = ''; return; }
-  // dadosPix usa campo 'nome' para o recebedor e 'recebido' em algumas versões
   const transacoes = dadosPix.filter(p => {
     const nome = (p.recebido || '').toLowerCase();
     return nome.includes(busca);
@@ -3351,7 +3356,7 @@ function pixBuscarCliente() {
     el.innerHTML = "<div style='font-size:13px;color:var(--muted);padding:8px'>Nenhuma transacao encontrada para este cliente.</div>";
     return;
   }
-  const total = transacoes.reduce((s,p) => s+p.val, 0);
+  const total = transacoes.reduce((s,p) => s+(p.valor||p.val||0), 0);
   const porDia = {};
   transacoes.forEach(p => { porDia[p.data] = (porDia[p.data]||0) + p.val; });
   const dias = Object.keys(porDia).sort((a,b) => {
@@ -3368,7 +3373,7 @@ function pixBuscarCliente() {
     + transacoes.slice(-10).reverse().map(p =>
         "<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px'>"
         + "<span style='color:var(--muted)'>" + p.data + " " + p.hora + "</span>"
-        + "<span style='color:var(--accent);font-weight:600'>R$ " + brl2(p.val) + "</span>"
+        + "<span style='color:var(--accent);font-weight:600'>R$ " + brl2(p.valor||p.val||0) + "</span>"
         + "</div>"
       ).join('')
     + "</div>";
